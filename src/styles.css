@@ -148,10 +148,25 @@ input { font-family: var(--mono); }
 }
 
 .control-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+.btn-mute { white-space: nowrap; font-size: 0.75rem; }
 .control-title { color: var(--amber); font-size: 1.15rem; letter-spacing: 0.12em; }
 .control-sub { color: var(--text-dim); font-size: 0.75rem; margin-top: 4px; letter-spacing: 0.08em; }
 .control-sub strong { color: var(--green); }
 .control-clock { font-size: 2.4rem; color: var(--green); text-shadow: 0 0 12px rgba(70, 255, 157, 0.5); font-variant-numeric: tabular-nums; }
+
+.group-name-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.group-name-label { color: var(--amber-dim); font-size: 0.75rem; letter-spacing: 0.15em; white-space: nowrap; }
+.group-name-input {
+  flex: 1;
+  min-width: 220px;
+  background: #0a120d;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.95rem;
+  padding: 7px 12px;
+}
+.group-name-input:focus { outline: 1px solid var(--amber); }
+.group-name-input:disabled { opacity: 0.5; }
 
 .control-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 .control-bar-spacer { flex: 1; }
@@ -176,6 +191,15 @@ input { font-family: var(--mono); }
 }
 .num-input:focus { outline: 1px solid var(--amber); }
 .task-retry { color: var(--red); font-size: 0.72rem; }
+.task-tolerance { color: var(--text-dim); font-size: 0.7rem; }
+.task-unconfigured {
+  color: var(--amber);
+  font-size: 0.72rem;
+  background: rgba(255, 201, 4, 0.08);
+  border: 1px solid rgba(255, 201, 4, 0.3);
+  padding: 4px 8px;
+  margin-bottom: 8px;
+}
 .task-result { color: var(--text); font-size: 0.9rem; }
 .task-result .decoded { color: var(--green); font-size: 1.1rem; letter-spacing: 0.15em; }
 
@@ -212,6 +236,29 @@ input { font-family: var(--mono); }
 .pw-denied { color: var(--red); margin-top: 10px; font-size: 0.8rem; letter-spacing: 0.1em; }
 .pw-launched .section-title { animation: pulse-green 1.5s infinite; }
 @keyframes pulse-green { 50% { text-shadow: 0 0 18px rgba(70, 255, 157, 0.9); } }
+
+.lb-panel { margin-bottom: 16px; border-left: 3px solid var(--amber-dim); }
+.lb-list { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: rgba(255, 201, 4, 0.04);
+  border: 1px solid var(--line);
+}
+.lb-rank { color: var(--amber); font-size: 0.85rem; width: 2.4em; flex-shrink: 0; }
+.lb-name-input {
+  flex: 1;
+  min-width: 120px;
+  background: #0a120d;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 5px 8px;
+}
+.lb-name-input:focus { outline: 1px solid var(--amber); }
+.lb-time { color: var(--green); font-size: 0.95rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .control-footer { color: var(--text-dim); font-size: 0.72rem; text-align: center; padding-top: 8px; font-family: var(--display); }
 .control-footer code { color: var(--amber-dim); font-family: var(--mono); }
@@ -260,6 +307,410 @@ input { font-family: var(--mono); }
 .awaiting { color: var(--amber); letter-spacing: 0.25em; font-size: clamp(0.9rem, 2vw, 1.3rem); }
 .blink { animation: blink 1.2s step-end infinite; }
 @keyframes blink { 50% { opacity: 0.15; } }
+
+/* ----- idle: pre-mission surface cam ----- */
+/* Deliberately light on chrome — reads as a live camera feed with small HUD
+   readouts in the corners, not a title card blocking the view. */
+.disp-idle {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+.idle-live-tag {
+  position: absolute;
+  top: 3vh;
+  left: 3vw;
+  z-index: 15;
+  color: var(--red);
+  letter-spacing: 0.15em;
+  font-size: clamp(0.65rem, 1.3vw, 0.9rem);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(4, 8, 6, 0.6);
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 77, 77, 0.4);
+}
+.idle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1.1s step-end infinite;
+  box-shadow: 0 0 8px rgba(255, 77, 77, 0.8);
+  flex-shrink: 0;
+}
+/* Title card — reuses .hud-panel (same bordered/corner-bracket console
+   look as the rest of the app) so the big title reads as a broadcast
+   graphic overlaid on the live feed, not a disconnected movie title card. */
+.idle-title-card {
+  position: absolute;
+  top: 3vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  text-align: center;
+  padding: 12px 28px 14px;
+  max-width: 39vw;
+}
+.idle-title { margin: 4px 0 0; font-size: clamp(1.3rem, 2.8vw, 2.2rem); }
+
+.idle-hud {
+  position: absolute;
+  top: 20vh;
+  right: 3vw;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 300px;
+  background: rgba(4, 8, 6, 0.55);
+  border: 1px solid rgba(255, 201, 4, 0.25);
+  padding: 8px 14px;
+}
+.idle-hud .telemetry {
+  border: none;
+  padding: 0;
+  margin: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  max-width: 270px;
+}
+.idle-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  letter-spacing: 0.15em;
+  font-size: clamp(0.65rem, 1.3vw, 0.85rem);
+  text-shadow: 0 0 10px rgba(70, 255, 157, 0.5);
+}
+.idle-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(70, 255, 157, 0.8);
+  animation: pulse-scale 1.6s infinite;
+  flex-shrink: 0;
+}
+.idle-standby-tag {
+  position: absolute;
+  left: 3vw;
+  bottom: 6vh;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--amber);
+  letter-spacing: 0.15em;
+  font-size: clamp(0.6rem, 1.2vw, 0.85rem);
+}
+.idle-standby-tag .idle-dot { background: var(--amber); box-shadow: 0 0 8px rgba(255, 201, 4, 0.8); animation: blink 1.4s step-end infinite; }
+
+/* ---------- pre-mission distress call (TransmissionScreen) ---------- */
+/* the live feed keeps running underneath this whole sequence — nothing
+   here replaces .disp-idle/.mars-scene, it all layers on top */
+.alert-shake { animation: rumble 0.15s infinite; }
+
+.alert-flash-overlay { position: fixed; inset: 0; z-index: 14; pointer-events: none; }
+.alert-flash-pulse {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 40, 40, 0.35);
+  animation: alert-pulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes alert-pulse { from { opacity: 0.2; } to { opacity: 0.7; } }
+
+.intro-alert-banner {
+  position: absolute;
+  top: 3vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  background: rgba(40, 4, 4, 0.78);
+  border: 2px solid var(--red);
+  color: var(--red);
+  padding: 10px 26px;
+  font-size: clamp(0.85rem, 2.2vw, 1.4rem);
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-shadow: 0 0 14px rgba(255, 77, 77, 0.7);
+  animation: pulse-red-glow 1.4s ease-in-out infinite;
+}
+@keyframes pulse-red-glow {
+  0%, 100% { box-shadow: 0 0 16px rgba(255, 77, 77, 0.25); }
+  50% { box-shadow: 0 0 32px rgba(255, 77, 77, 0.55); }
+}
+
+.intro-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--red);
+  letter-spacing: 0.15em;
+  font-size: clamp(0.65rem, 1.3vw, 0.85rem);
+  text-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+}
+.intro-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--red);
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.8);
+  animation: blink 1s step-end infinite;
+}
+
+/* holographic message bubbles — one on screen at a time, over the feed */
+.intro-dialogue {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 16;
+  width: min(78vw, 820px);
+  display: flex;
+  justify-content: center;
+}
+.intro-bubble {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  max-width: 100%;
+  animation: intro-bubble-in 0.4s ease-out;
+}
+.intro-bubble.from-command { flex-direction: row-reverse; }
+.intro-bubble-avatar { flex-shrink: 0; }
+.intro-command-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(4, 8, 6, 0.75);
+  border: 2px solid var(--amber);
+  font-size: 1.5rem;
+  box-shadow: 0 0 16px rgba(255, 201, 4, 0.4);
+}
+.intro-bubble-card {
+  position: relative;
+  background: rgba(4, 10, 8, 0.76);
+  border: 1px solid var(--green-dim);
+  padding: 12px 20px;
+  min-width: 220px;
+  box-shadow: 0 0 24px rgba(70, 255, 157, 0.15);
+}
+.from-command .intro-bubble-card { border-color: var(--amber-dim); box-shadow: 0 0 24px rgba(255, 201, 4, 0.15); }
+.intro-bubble-name {
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: var(--green);
+  margin-bottom: 6px;
+}
+.from-command .intro-bubble-name { color: var(--amber); }
+.intro-bubble-text {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: clamp(0.82rem, 1.6vw, 1.1rem);
+  line-height: 1.5;
+}
+@keyframes intro-bubble-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Mars surface scene (idle screen background) ---------- */
+/* Stops short of the true viewport bottom so the fixed bottom ticker never
+   clips ground detail (rover wheels, rocket base, habitat footings). */
+.mars-scene { position: absolute; top: 0; left: 0; right: 0; bottom: 46px; overflow: hidden; z-index: 1; }
+.mars-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #241016 0%, #7a2f1c 34%, #c9622c 62%, #e8965a 100%);
+}
+.mars-sun {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 220, 160, 0.95) 0%, rgba(255, 180, 90, 0.5) 45%, transparent 70%);
+  transform: translateX(-50%);
+  animation: sun-pulse 6s ease-in-out infinite;
+}
+@keyframes sun-pulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+.mars-dust {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(100deg, rgba(255, 200, 150, 0.05) 0 40px, transparent 40px 90px);
+  animation: dust-drift 26s linear infinite;
+  opacity: 0.6;
+}
+@keyframes dust-drift { from { transform: translateX(0); } to { transform: translateX(-200px); } }
+
+/* a lone dust devil wanders across the horizon every so often */
+.dust-devil {
+  position: absolute;
+  bottom: 24vh;
+  left: -5%;
+  width: 14px;
+  height: 90px;
+  background: linear-gradient(180deg, rgba(210, 130, 80, 0) 0%, rgba(210, 130, 80, 0.4) 40%, rgba(210, 130, 80, 0.15) 100%);
+  border-radius: 50% 50% 20% 20%;
+  filter: blur(1px);
+  transform-origin: bottom center;
+  animation: dust-devil-move 34s linear infinite;
+}
+@keyframes dust-devil-move {
+  0% { left: -5%; opacity: 0; transform: skewX(0deg); }
+  8% { opacity: 0.75; }
+  50% { transform: skewX(6deg); }
+  92% { opacity: 0.75; }
+  100% { left: 102%; opacity: 0; transform: skewX(0deg); }
+}
+
+.mars-mountains {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 32vh;
+  width: 100%;
+  height: 12vh;
+  fill: rgba(90, 40, 24, 0.55);
+}
+.mars-ridge-near {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30vh;
+  width: 100%;
+  height: 9vh;
+  fill: rgba(64, 26, 14, 0.6);
+}
+.mars-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  background: linear-gradient(180deg, #a8471f 0%, #7c3216 60%, #5c2410 100%);
+  overflow: hidden;
+}
+.ground-texture {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.15) 2px, transparent 2px);
+  background-size: 26px 18px;
+  opacity: 0.5;
+}
+.mars-rocks { position: absolute; inset: 0; z-index: 2; }
+
+/* habitat — bigger, busier: main dome + connector module, solar array,
+   scanning dish, warning beacon. Windows glow to suggest life inside
+   without a literal character sprite. */
+.hab { position: absolute; left: 4%; bottom: 6%; width: 26vw; min-width: 240px; max-width: 420px; z-index: 3; }
+.hab-svg { width: 100%; height: auto; }
+.hab-beacon { animation: blink 1.6s step-end infinite; }
+.hab-glow { animation: hab-window-flicker 4s ease-in-out infinite; }
+.hab-glow-b { animation-delay: 1.4s; }
+@keyframes hab-window-flicker { 0%, 100% { opacity: 0.85; } 45% { opacity: 0.5; } 55% { opacity: 0.9; } }
+.hab-dish { animation: dish-scan 10s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes dish-scan { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+
+/* small comms relay tower, mid-ground */
+.comms-tower { position: absolute; left: 49%; bottom: 9%; width: 4vw; min-width: 26px; max-width: 44px; z-index: 3; }
+.comms-tower-svg { width: 100%; height: auto; }
+
+/* greenhouse module — tucked in the gap between the habitat and the comms
+   tower */
+.greenhouse { position: absolute; left: 33%; bottom: 6%; width: 12vw; min-width: 110px; max-width: 180px; z-index: 3; }
+.greenhouse-svg { width: 100%; height: auto; }
+.greenhouse-plant { animation: plant-grow 5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.greenhouse-plant:nth-child(2) { animation-delay: 0.6s; }
+.greenhouse-plant:nth-child(3) { animation-delay: 1.3s; }
+.greenhouse-plant:nth-child(4) { animation-delay: 2s; }
+@keyframes plant-grow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+/* launch pad: flat platform + a proper lattice gantry standing right beside
+   the rocket (not a stray stub off to one side), steam only — no flame,
+   this is the calm-before-the-storm screen */
+.idle-launch-pad { position: absolute; right: 6%; bottom: 2.5%; width: 20vw; min-width: 150px; max-width: 260px; z-index: 2; }
+.idle-pad-svg { width: 100%; height: auto; }
+.idle-gantry { position: absolute; right: 17.5%; bottom: 3%; width: 3.4vw; min-width: 24px; max-width: 46px; height: 15vh; z-index: 3; }
+.idle-gantry-svg { width: 100%; height: 100%; }
+.idle-gantry-light { animation: blink 1.3s step-end infinite; }
+/* viewBox is cropped to the fin tips (see MarsScene.jsx), so this now sits
+   flush on the pad instead of floating above it */
+.idle-rocket { position: absolute; right: 10.5%; bottom: 14%; width: 9vw; min-width: 60px; max-width: 110px; z-index: 4; }
+.idle-rocket-svg { width: 100%; height: auto; }
+
+/* engine steam, venting sideways from the nozzle at the base of the rocket
+   — a dense, evenly-staggered set of puffs so the stream reads as constant
+   rather than a series of separate spurts */
+.idle-smoke { position: absolute; bottom: 6%; left: 50%; }
+.idle-smoke span {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  border-radius: 50%;
+  background: rgba(230, 230, 230, 0.65);
+  animation-duration: 2.1s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+.smoke-left { animation-name: idle-steam-left; }
+.smoke-right { animation-name: idle-steam-right; }
+@keyframes idle-steam-left {
+  0% { opacity: 0; transform: translate(-2px, 1px) scale(0.5); }
+  14% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(-66px, -8px) scale(2.3); }
+}
+@keyframes idle-steam-right {
+  0% { opacity: 0; transform: translate(2px, 1px) scale(0.5); }
+  14% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(66px, -8px) scale(2.3); }
+}
+.idle-nozzle-glow {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 160, 70, 0.6) 0%, transparent 70%);
+  animation: nozzle-pulse 1.3s ease-in-out infinite;
+}
+@keyframes nozzle-pulse { 0%, 100% { opacity: 0.55; transform: translate(-50%, 50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, 50%) scale(1.5); } }
+
+/* rover — chassis, rocker-bogie wheels, camera mast, arm — drives back and
+   forth across the foreground */
+.rover-track { position: absolute; inset: 0; bottom: 4%; top: auto; height: 9vh; z-index: 4; }
+.rover {
+  position: absolute;
+  bottom: 0;
+  left: 8vw;
+  width: 9vw;
+  min-width: 58px;
+  max-width: 96px;
+  animation: rover-drive 20s ease-in-out infinite alternate;
+}
+.rover-svg { width: 100%; height: auto; }
+@keyframes rover-drive {
+  0% { transform: translateX(0) scaleX(1); }
+  48% { transform: translateX(66vw) scaleX(1); }
+  50% { transform: translateX(66vw) scaleX(-1); }
+  98% { transform: translateX(0) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+.rover-wheel { animation: wheel-spin 0.6s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes wheel-spin { to { transform: rotate(360deg); } }
 
 /* ----- active: header / clock / systems ----- */
 .disp-active { flex: 1; display: flex; flex-direction: column; padding: 3vh 3vw; position: relative; min-height: 100vh; }
@@ -329,6 +780,112 @@ input { font-family: var(--mono); }
   75% { transform: translateX(-3px); }
 }
 
+/* ---------- rocket diagram (replaces the old 4-box sys-grid) ---------- */
+/* a wide cutaway ship the four systems actually live on, each annotated
+   with a leader-line callout, instead of four identical boxes floating in
+   empty space */
+.rocket-diagram { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.rocket-diagram-inner { position: relative; width: min(100%, 1400px); aspect-ratio: 1000 / 300; }
+.rocket-diagram-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.rocket-diagram-svg { filter: drop-shadow(0 0 26px rgba(255, 201, 4, 0.14)); }
+
+/* colors match the launch-sequence <Rocket> exactly — nose, body, band,
+   fin, nozzle — so this reads as the same ship, not a generic placeholder */
+.rocket-nose-hull { fill: #c8ccd4; stroke: var(--amber-dim); stroke-width: 2; }
+.rocket-body-hull { fill: #e8eaee; stroke: var(--amber-dim); stroke-width: 2; }
+.rocket-band { fill: var(--amber); }
+.rocket-fin { fill: #b8410e; stroke: rgba(0, 0, 0, 0.25); stroke-width: 1; }
+.rocket-nozzle { fill: #8a8f99; stroke: var(--amber-dim); stroke-width: 1.5; }
+.rocket-porthole { fill: #0b1420; stroke: var(--amber); stroke-width: 3; }
+.rocket-nav-light.red { fill: var(--red); animation: blink 1.4s step-end infinite; }
+.rocket-nav-light.green { fill: var(--green); animation: blink 1.4s step-end infinite reverse; }
+
+/* engine glow builds from a faint idle simmer to a full roar as more
+   systems come back online (flame-level-0 through flame-level-4) */
+.rocket-engine-flame { fill: var(--amber); filter: blur(3px); transition: opacity 0.8s; }
+.flame-level-0 { opacity: 0.08; }
+.flame-level-1 { opacity: 0.25; }
+.flame-level-2 { opacity: 0.45; }
+.flame-level-3 { opacity: 0.7; }
+.flame-level-4 { opacity: 1; animation: rocket-flame-flicker 0.4s infinite alternate; }
+@keyframes rocket-flame-flicker { from { transform: scaleX(1); } to { transform: scaleX(1.12); } }
+
+.rocket-leader { stroke-width: 2; stroke-dasharray: 4 4; transition: stroke 0.4s; }
+.rocket-leader.zone-offline { stroke: var(--red-dim); }
+.rocket-leader.zone-online { stroke: var(--green); filter: drop-shadow(0 0 4px rgba(70, 255, 157, 0.7)); }
+
+.rocket-zone-panel { stroke-width: 2; transition: fill 0.5s, stroke 0.5s; }
+.rocket-zone.zone-offline .rocket-zone-panel { fill: rgba(255, 77, 77, 0.1); stroke: var(--red-dim); animation: rocket-zone-flicker 2.4s infinite; }
+.rocket-zone.zone-online .rocket-zone-panel {
+  fill: rgba(70, 255, 157, 0.14);
+  stroke: var(--green);
+  filter: drop-shadow(0 0 10px rgba(70, 255, 157, 0.5));
+}
+@keyframes rocket-zone-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  94% { opacity: 0.55; }
+  96% { opacity: 1; }
+}
+.rocket-zone-rivet { fill: rgba(0, 0, 0, 0.35); }
+.rocket-zone.zone-online .rocket-zone-rivet { fill: var(--green-dim); }
+
+/* a soft light sweeping across each online panel — keeps it feeling
+   "alive" once settled, not just a static colored box */
+.rocket-zone-shine { fill: #fff; opacity: 0; pointer-events: none; }
+.rocket-zone.zone-online .rocket-zone-shine { opacity: 0.12; animation: rocket-zone-shine-sweep 3.4s ease-in-out infinite; }
+@keyframes rocket-zone-shine-sweep {
+  0% { transform: translateX(-20px); }
+  100% { transform: translateX(134px); }
+}
+
+.rocket-zone-icon { font-size: 30px; opacity: 0.85; }
+.rocket-zone.zone-offline .rocket-zone-icon { opacity: 0.35; filter: grayscale(1); }
+
+/* completion flash is a SEPARATE overlay rect that pops and fades, rather
+   than a brightness filter on the same rect whose fill is simultaneously
+   cross-fading red->green — that combination was producing a muddy,
+   off-color blend right at the moment of completion */
+.rocket-zone-flash { fill: #fff; opacity: 0; pointer-events: none; animation: rocket-zone-flash-pop 0.8s ease-out forwards; }
+@keyframes rocket-zone-flash-pop {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.rocket-zone.zone-just-failed { animation: shake 0.5s; transform-box: fill-box; transform-origin: center; }
+
+/* callout cards — HTML overlays sharing the same coordinate box as the SVG
+   (see .rocket-diagram-inner) so `left` percentages always line up */
+.rocket-callout {
+  position: absolute;
+  left: 0;
+  transform: translateX(-50%);
+  width: 17%;
+  min-width: 130px;
+  text-align: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  padding: 1vh 0.6vw;
+}
+.rocket-callout.top { top: 1%; }
+.rocket-callout.bottom { top: 83%; }
+.rocket-callout-name { color: var(--text); letter-spacing: 0.12em; font-size: clamp(0.6rem, 1.1vw, 0.85rem); margin-bottom: 4px; }
+.rocket-callout-status { font-size: clamp(0.9rem, 1.8vw, 1.4rem); letter-spacing: 0.1em; font-weight: bold; }
+.rocket-callout-readout { font-size: clamp(0.5rem, 0.9vw, 0.7rem); letter-spacing: 0.1em; color: var(--text-dim); margin-top: 4px; }
+
+.rocket-callout.callout-offline { border-color: var(--red-dim); box-shadow: inset 0 0 20px rgba(255, 77, 77, 0.08); }
+.rocket-callout.callout-offline .rocket-callout-status { color: var(--red); text-shadow: 0 0 10px rgba(255, 77, 77, 0.5); }
+.rocket-callout.callout-online { border-color: var(--green-dim); box-shadow: inset 0 0 20px rgba(70, 255, 157, 0.08); }
+.rocket-callout.callout-online .rocket-callout-status { color: var(--green); text-shadow: 0 0 10px rgba(70, 255, 157, 0.5); }
+.rocket-callout.callout-online .rocket-callout-readout { color: var(--green-dim); }
+
+.rocket-callout.callout-just-online { animation: power-up 1.2s ease-out; }
+.rocket-callout.callout-just-failed { animation: shake 0.5s; }
+
+@media (max-width: 900px) {
+  .rocket-callout-name, .rocket-callout-readout { display: none; }
+}
+
 /* glitch effect for OFFLINE text */
 .glitch { position: relative; animation: glitch-skew 3s infinite; }
 .glitch::before, .glitch::after {
@@ -377,9 +934,87 @@ input { font-family: var(--mono); }
 @keyframes banner-in { from { opacity: 0; transform: translateX(-50%) translateY(24px); } to { opacity: 1; transform: translateX(-50%); } }
 @keyframes blink-once { 30% { opacity: 0.3; } 60% { opacity: 1; } }
 
+/* ---------- Citronaut hint bubble (persistent, Mission Display only) ---------- */
+.hint-bubble {
+  position: fixed;
+  left: 3vw;
+  bottom: 10vh;
+  z-index: 25;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  max-width: 46vw;
+  animation: hint-pop 0.4s ease-out;
+}
+@keyframes hint-pop {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+.hint-mascot { flex-shrink: 0; filter: drop-shadow(0 0 12px rgba(255, 201, 4, 0.35)); }
+.hint-speech {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--amber-dim);
+  padding: 12px 18px;
+  max-width: 40vw;
+}
+.hint-speech-tail {
+  position: absolute;
+  left: -9px;
+  bottom: 18px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 10px solid var(--amber-dim);
+}
+.hint-speech-label {
+  color: var(--amber);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  margin-bottom: 6px;
+}
+.hint-speech-text {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: clamp(0.8rem, 1.5vw, 1.05rem);
+  line-height: 1.5;
+}
+.hint-level-2 .hint-speech { border-color: var(--amber); box-shadow: 0 0 16px rgba(255, 201, 4, 0.25); }
+.hint-level-3 .hint-speech { border-color: var(--red); box-shadow: 0 0 18px rgba(255, 77, 77, 0.3); }
+.hint-level-3 .hint-speech-label { color: var(--red); }
+
+/* ----- final authorization: recovered codes + cipher ----- */
+.final-codes-label {
+  color: var(--text-dim);
+  letter-spacing: 0.3em;
+  font-size: clamp(0.6rem, 1.2vw, 0.85rem);
+  margin-top: 3vh;
+}
+.final-codes { display: flex; gap: 1.4vw; margin: 1.5vh 0; }
+.code-chip {
+  font-size: clamp(1.3rem, 3.6vw, 2.2rem);
+  color: var(--amber);
+  border: 2px solid var(--amber-dim);
+  padding: 1vh 1.4vw;
+  min-width: 1ch;
+  text-align: center;
+  background: rgba(255, 201, 4, 0.06);
+  opacity: 0;
+  animation: segment-in 0.5s ease-out forwards;
+}
+.cipher-instruction {
+  max-width: 780px;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: clamp(0.85rem, 1.7vw, 1.1rem);
+  line-height: 1.6;
+  margin: 2.5vh 0 1vh;
+}
+
 /* ----- final authorization ----- */
 .final-allonline { color: var(--green); letter-spacing: 0.35em; font-size: clamp(0.9rem, 2vw, 1.3rem); animation: pulse-green 2s infinite; }
-.final-letters { display: flex; gap: 2.5vw; margin: 5vh 0; }
+.final-letters { display: flex; gap: 2.5vw; margin: 1.5vh 0; flex-wrap: wrap; justify-content: center; }
 .final-segment {
   font-size: clamp(2.5rem, 8vw, 6rem);
   color: var(--green);
@@ -437,24 +1072,213 @@ input { font-family: var(--mono); }
 }
 
 .rocket { height: 26vh; margin-top: 3vh; }
-.rocket-flame { opacity: 0; }
+/* transform-box/transform-origin matter here: without them, an SVG
+   element's default scale origin is the *viewBox* center, not its own
+   bounds — so scaling this group (near the bottom of a 260-tall viewBox)
+   visibly detaches it from the nozzle each flicker instead of scaling in
+   place. */
+.rocket-flame { opacity: 0; transform-box: fill-box; transform-origin: center; }
 .rocket-launched .rocket-flame { opacity: 1; animation: flame 0.12s infinite alternate; }
 @keyframes flame { from { transform: scaleY(1); } to { transform: scaleY(1.25) scaleX(0.92); } }
-.rocket-launched { animation: ascend 3.5s cubic-bezier(0.5, 0, 0.9, 0.4) forwards; }
 @keyframes ascend {
   0% { transform: translateY(0); }
   15% { transform: translateY(0) translateX(1px); }
   25% { transform: translateY(-2vh) translateX(-1px); }
   100% { transform: translateY(-120vh); }
 }
-.liftoff { animation: rumble 0.15s infinite; }
+.liftoff-text { color: var(--amber); font-size: clamp(2rem, 6vw, 4rem); letter-spacing: 0.2em; text-shadow: 0 0 40px rgba(255, 201, 4, 0.8); animation: blink 0.4s step-end infinite; }
+
+/* ----- launch sequence: grounded on the actual Mars surface ----- */
+.launch-surface { position: relative; min-height: 100vh; overflow: hidden; }
+.launch-mars-layer { position: absolute; inset: 0; z-index: 1; }
+/* the idle screen's MarsScene reserves space at the bottom for its own
+   ticker; the launch sequence has no ticker, so let it fill the frame */
+.launch-mars-layer .mars-scene { bottom: 0; }
+/* camera scrolls UP with the ship: the ground slides straight down and out
+   of frame (no scale change — a shrink reads as "zoom out", not "we're
+   rising past it"). The Mars sky and starfield cross-fade gradually across
+   the whole ascent, linearly, rather than holding opaque and then snapping
+   over near the end. */
+.launch-ascend .launch-mars-layer { animation: ground-recede 4.2s linear forwards; }
+@keyframes ground-recede {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(60vh); opacity: 0; }
+}
+.launch-stars-in { position: absolute; inset: 0; z-index: 2; opacity: 0; animation: stars-fade-in 4.2s linear forwards; }
+@keyframes stars-fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+/* a passing wash of upper-atmosphere haze, between the Mars-sky and
+   starfield layers — gives the crossfade a middle beat (dusty orange ->
+   deep twilight blue -> clear black) instead of one flat dissolve */
+.launch-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(200deg, rgba(120, 90, 200, 0.5) 0%, rgba(40, 30, 110, 0.55) 45%, rgba(6, 8, 20, 0.35) 100%);
+  opacity: 0;
+  animation: atmosphere-pass 4.2s ease-in-out forwards;
+}
+@keyframes atmosphere-pass {
+  0% { opacity: 0; }
+  38% { opacity: 0.9; }
+  70% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+.launch-ascend { animation: rumble 0.15s infinite; }
 @keyframes rumble {
   0%, 100% { transform: translate(0, 0); }
   25% { transform: translate(2px, -1px); }
   50% { transform: translate(-2px, 1px); }
   75% { transform: translate(1px, 2px); }
 }
-.liftoff-text { color: var(--amber); font-size: clamp(2rem, 6vw, 4rem); letter-spacing: 0.2em; text-shadow: 0 0 40px rgba(255, 201, 4, 0.8); animation: blink 0.4s step-end infinite; }
+
+/* bottom is pulled down by the same 46px the Mars scene no longer reserves
+   for a ticker here — otherwise the rocket stays put while the ground (and
+   its pad) drop by that amount, opening a gap between them */
+.hero-rocket-wrap { position: absolute; right: 9%; bottom: calc(0.5% - 46px); width: 11vw; min-width: 80px; max-width: 130px; z-index: 5; }
+.hero-rocket-wrap .rocket { width: 100%; height: auto; margin-top: 0; }
+/* the ascend movement lives here, on the whole wrap (rocket + trail
+   together), not on the rocket SVG alone — the trail is a sibling of the
+   SVG, so animating only the SVG left the trail behind, stuck in place
+   while the rocket flew off without it. */
+.hero-rocket-ascending { animation: ascend 4.2s cubic-bezier(0.5, 0, 0.9, 0.4) forwards; }
+
+/* aggressive pre-launch venting, sideways from the nozzle — dense enough
+   that puffs overlap continuously into one thick plume rather than
+   reading as separate dots, plus a soft haze base underneath for body */
+.hero-smoke { position: absolute; bottom: 30%; left: 50%; z-index: 1; }
+.hero-smoke-haze {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: 70px;
+  height: 40px;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(235, 235, 235, 0.55) 0%, transparent 72%);
+  filter: blur(2px);
+  animation: hero-haze-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes hero-haze-pulse { from { opacity: 0.7; } to { opacity: 1; } }
+.hero-smoke span {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  border-radius: 50%;
+  background: rgba(235, 235, 235, 0.8);
+  animation-duration: 1.3s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+.hero-smoke-left { animation-name: hero-steam-left; }
+.hero-smoke-right { animation-name: hero-steam-right; }
+/* `left: 0` on each span puts the anchor point at the box's *left edge*,
+   not its center — every puff (left and right alike) was starting biased
+   toward the right by half its own width. The `-50%` term here re-centers
+   each span on the nozzle before the px offset carries it outward, the
+   same fix already used on .rocket-trail-puff below. */
+@keyframes hero-steam-left {
+  0% { opacity: 0; transform: translate(calc(-50% - 3px), 2px) scale(0.5); }
+  10% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(calc(-50% - 95px), -18px) scale(2.6); }
+}
+@keyframes hero-steam-right {
+  0% { opacity: 0; transform: translate(calc(-50% + 3px), 2px) scale(0.5); }
+  10% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(calc(-50% + 95px), -18px) scale(2.6); }
+}
+
+/* liftoff: exhaust shoots straight down hard, leaving a trail behind the
+   climbing rocket — a moving child of .hero-rocket-wrap, so it travels
+   with the ship automatically instead of needing to be kept in sync.
+   Anchored with `top` (not `bottom`) so it grows DOWNWARD from the
+   nozzle — anchoring with `bottom` + a tall height grows the box UPWARD
+   instead, which was sending the whole trail the wrong direction. */
+.rocket-trail { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); width: 50%; height: 140vh; pointer-events: none; }
+.rocket-trail-core {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255, 225, 160, 0.75) 0%, rgba(255, 175, 80, 0.45) 10%, rgba(255, 120, 40, 0.2) 24%, rgba(220, 220, 220, 0.08) 45%, transparent 70%);
+  filter: blur(5px);
+}
+.rocket-trail-puff {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  filter: blur(1px);
+  animation: trail-shoot 0.55s linear infinite;
+}
+@keyframes trail-shoot {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 60vh) scale(3); }
+}
+
+.launch-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 8vh;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ----- launch sequence: deep space transit ----- */
+.launch-space { overflow: hidden; }
+.distant-earth {
+  position: absolute;
+  top: 18vh;
+  right: 14vw;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6fb8ff 0%, #2f6fb0 40%, #1b3f66 75%),
+    radial-gradient(circle at 65% 70%, rgba(120, 200, 120, 0.5) 0%, transparent 40%);
+  box-shadow: 0 0 24px rgba(120, 180, 255, 0.5);
+}
+.transit-rocket {
+  position: absolute;
+  left: 12vw;
+  bottom: 16vh;
+  width: 70px;
+  animation: transit-fly 4.5s linear forwards;
+}
+.transit-rocket-svg { width: 100%; height: auto; filter: drop-shadow(0 0 6px rgba(255, 201, 4, 0.5)); }
+/* Straight shot at Earth: 67deg is the actual bearing from the rocket's
+   base position to the Earth icon's center (computed from their CSS
+   positions), held constant for the whole flight — nothing to stutter,
+   since rotation never changes. The 0% translate starts well off-screen,
+   further back along that same line, so the ship is already at full
+   speed by the time it enters frame instead of visibly winding up from a
+   standstill; `linear` (not ease-in) keeps that speed constant throughout. */
+@keyframes transit-fly {
+  0%   { transform: translate(-22vw, 16vh) rotate(67deg) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translate(46vw, -34vh) rotate(67deg) scale(0.16); opacity: 0; }
+}
+.transit-text {
+  position: absolute;
+  bottom: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--amber);
+  letter-spacing: 0.2em;
+  font-size: clamp(0.9rem, 2vw, 1.3rem);
+  text-shadow: 0 0 16px rgba(255, 201, 4, 0.5);
+}
 
 /* starfield: pure CSS dots */
 .starfield {
@@ -481,7 +1305,36 @@ input { font-family: var(--mono); }
 .success-badge { color: var(--amber); letter-spacing: 0.35em; font-size: clamp(0.9rem, 2vw, 1.3rem); animation: pulse-green 2s infinite; }
 .success-title { color: var(--green); text-shadow: 0 0 30px rgba(70, 255, 157, 0.6); animation: flicker-in 1.5s; }
 .success-sub { font-family: var(--display); color: var(--text); font-size: clamp(1.1rem, 3vw, 2rem); margin-top: 2vh; letter-spacing: 0.08em; }
-.success-stats { margin-top: 6vh; color: var(--text-dim); letter-spacing: 0.2em; font-size: clamp(0.75rem, 1.6vw, 1.1rem); }
+.success-stats { margin-top: 3vh; color: var(--text-dim); letter-spacing: 0.2em; font-size: clamp(0.75rem, 1.6vw, 1.1rem); }
+
+.mission-leaderboard {
+  position: relative;
+  z-index: 10;
+  margin-top: 4vh;
+  width: min(90vw, 520px);
+  text-align: left;
+}
+.mission-leaderboard .section-title { text-align: center; }
+.lb-display-list { display: flex; flex-direction: column; gap: 6px; }
+.lb-display-row {
+  display: grid;
+  grid-template-columns: 2.6em 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 201, 4, 0.03);
+  font-size: clamp(0.75rem, 1.6vw, 0.95rem);
+}
+.lb-display-rank { color: var(--amber-dim); }
+.lb-display-name { color: var(--text); letter-spacing: 0.05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-display-time { color: var(--green); font-variant-numeric: tabular-nums; }
+.lb-display-you {
+  border-color: var(--green);
+  background: rgba(70, 255, 157, 0.08);
+  box-shadow: 0 0 14px rgba(70, 255, 157, 0.25);
+}
+.lb-display-you .lb-display-rank { color: var(--green); }
 
 /* ==========================================================================
    UCF THEME ADDITIONS — grid backdrop, mascot, telemetry, ticker, task FX
@@ -599,6 +1452,56 @@ input { font-family: var(--mono); }
 @keyframes fx-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fx-out { to { opacity: 0; } }
 
+/* a quick bright pop the instant the overlay opens — a "power just hit
+   this system" beat rather than a plain fade-in */
+.fx-flash {
+  position: fixed;
+  inset: 0;
+  background: #eaffea;
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fx-flash-pop 0.5s ease-out forwards;
+}
+@keyframes fx-flash-pop { 0% { opacity: 0.5; } 100% { opacity: 0; } }
+
+/* three shockwave rings expanding from center behind the stage */
+.fx-burst { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.fx-burst span {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  opacity: 0;
+  animation: fx-burst-ring 1.1s ease-out forwards;
+}
+.fx-burst span:nth-child(2) { border-color: var(--amber); animation-delay: 0.15s; }
+.fx-burst span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes fx-burst-ring {
+  0% { opacity: 0.85; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(12); }
+}
+
+/* targeting-scanner frame around the stage — matches the corner-bracket
+   language used on .hud-panel elsewhere in the app */
+.fx-frame { position: relative; padding: 2.5vh 2.5vw; }
+.fx-frame::before,
+.fx-frame::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  opacity: 0;
+  animation: fx-frame-in 0.4s 0.1s ease-out forwards;
+}
+.fx-frame::before { top: 0; left: 0; border-top: 2px solid var(--amber); border-left: 2px solid var(--amber); }
+.fx-frame::after { bottom: 0; right: 0; border-bottom: 2px solid var(--amber); border-right: 2px solid var(--amber); }
+@keyframes fx-frame-in {
+  0% { opacity: 0; transform: scale(1.4); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .fx-stage { width: min(70vw, 720px); }
 .fxsvg { width: 100%; height: auto; max-height: 44vh; }
 .fx-sys {
@@ -620,6 +1523,22 @@ input { font-family: var(--mono); }
   letter-spacing: 2px;
 }
 
+.fx-praise {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(80vw, 640px);
+  opacity: 0;
+  animation: fade-up 0.7s 0.6s ease forwards;
+}
+.fx-praise-text {
+  color: var(--green);
+  font-family: var(--display);
+  font-size: clamp(0.85rem, 2vw, 1.2rem);
+  line-height: 1.5;
+  text-align: left;
+}
+
 /* fuel FX */
 .fx-pipe-base { stroke: #3a3f37; stroke-width: 10; fill: none; stroke-linejoin: round; }
 .fx-pipe-flow {
@@ -634,6 +1553,26 @@ input { font-family: var(--mono); }
 }
 .fx-flow-late { animation-delay: 2.6s; }
 @keyframes fx-flow { to { stroke-dashoffset: 0; } }
+/* a short bright segment that keeps looping along the line once it's full,
+   selling "still actively flowing" instead of a one-shot fill */
+.fx-pipe-pulse {
+  stroke: #ffd9a8;
+  stroke-width: 3;
+  fill: none;
+  stroke-linejoin: round;
+  stroke-dasharray: 26 380;
+  stroke-dashoffset: 400;
+  opacity: 0;
+  animation: fx-pipe-pulse-run 1.7s 1.9s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 217, 168, 0.9));
+}
+@keyframes fx-pipe-pulse-run {
+  0% { opacity: 0; stroke-dashoffset: 400; }
+  6% { opacity: 1; }
+  94% { opacity: 1; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+.fx-pipe-flange { fill: #5c6068; stroke: var(--amber-dim); stroke-width: 1; }
 .fx-tank-outline { fill: none; stroke: var(--amber); stroke-width: 2.5; }
 .fx-tank-fill {
   fill: #f47321;
@@ -643,9 +1582,23 @@ input { font-family: var(--mono); }
   animation: fx-tank 1.4s 1.4s ease-out forwards;
 }
 @keyframes fx-tank { to { transform: scaleY(1); } }
+.fx-tank-glow {
+  fill: none;
+  stroke: #f47321;
+  stroke-width: 2;
+  opacity: 0;
+  filter: blur(6px);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fx-tank-glow-pulse 1.6s 2.8s ease-out infinite;
+}
+@keyframes fx-tank-glow-pulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.08); }
+}
 .fx-bubble { fill: #ffd9a8; opacity: 0; animation: fx-bubble 1.2s 2.2s ease-in infinite; }
-.fx-bubble.b2 { animation-delay: 2.55s; }
-.fx-bubble.b3 { animation-delay: 2.9s; }
+.fx-bubble.b2 { animation-delay: 2.4s; }
+.fx-bubble.b3 { animation-delay: 2.6s; }
 @keyframes fx-bubble {
   0% { opacity: 0; transform: translateY(0); }
   20% { opacity: 0.9; }
@@ -661,8 +1614,11 @@ input { font-family: var(--mono); }
   stroke-linejoin: round;
   stroke-dasharray: 500;
   stroke-dashoffset: 500;
-  animation: fx-flow 1.4s 0.2s ease-out forwards;
-  filter: drop-shadow(0 0 6px rgba(255, 201, 4, 0.9));
+  animation: fx-flow 1.4s 0.2s ease-out forwards, fx-trace-pulse 1s 1.8s ease-in-out infinite;
+}
+@keyframes fx-trace-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 201, 4, 0.9)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255, 201, 4, 1)); }
 }
 .fx-node { fill: var(--amber); opacity: 0; animation: fx-node-pop 0.4s forwards; }
 .fxn1 { animation-delay: 0.5s; }
@@ -672,6 +1628,23 @@ input { font-family: var(--mono); }
   0% { opacity: 0; }
   60% { opacity: 1; transform: scale(1.6); transform-box: fill-box; transform-origin: center; }
   100% { opacity: 1; transform: scale(1); transform-box: fill-box; transform-origin: center; }
+}
+/* sonar-style ring pinging outward the moment each node lights */
+.fx-ping {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fx-ping-ring 0.7s forwards;
+}
+.fx-ping.fxn1 { animation-delay: 0.5s; }
+.fx-ping.fxn2 { animation-delay: 0.9s; }
+.fx-ping.fxn3 { animation-delay: 1.3s; }
+@keyframes fx-ping-ring {
+  0% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(4.5); }
 }
 .fx-bolt {
   fill: var(--amber);
@@ -686,9 +1659,42 @@ input { font-family: var(--mono); }
   25%, 60% { opacity: 1; }
   80% { opacity: 0.6; }
 }
+/* short sparks fanning tight off the two flanking nodes — anchored right
+   at the node's own coordinate so they read as part of the circuit, not
+   a second unrelated bolt hanging in empty space below it */
+.fx-spark {
+  stroke: var(--amber);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(255, 201, 4, 0.9));
+  animation: fx-spark-flick 0.4s forwards;
+}
+.fx-spark-group.fxn1 .fx-spark:nth-child(1) { animation-delay: 0.55s; }
+.fx-spark-group.fxn1 .fx-spark:nth-child(2) { animation-delay: 0.62s; }
+.fx-spark-group.fxn1 .fx-spark:nth-child(3) { animation-delay: 0.69s; }
+.fx-spark-group.fxn3 .fx-spark:nth-child(1) { animation-delay: 1.35s; }
+.fx-spark-group.fxn3 .fx-spark:nth-child(2) { animation-delay: 1.42s; }
+.fx-spark-group.fxn3 .fx-spark:nth-child(3) { animation-delay: 1.49s; }
+@keyframes fx-spark-flick {
+  0%, 100% { opacity: 0; }
+  25%, 65% { opacity: 1; }
+  45% { opacity: 0.3; }
+}
 
 /* injector FX */
 .fx-nozzle { fill: #8a8f99; stroke: var(--amber); stroke-width: 1.5; }
+.fx-mist {
+  fill: rgba(127, 212, 255, 0.14);
+  filter: blur(6px);
+  opacity: 0;
+  animation: fx-mist-fade 2.4s 0.6s ease-out forwards;
+}
+@keyframes fx-mist-fade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0.55; }
+}
 .fx-drop { fill: #7fd4ff; opacity: 0; }
 .fxd0 { animation: fx-spray0 1s infinite; }
 .fxd1 { animation: fx-spray1 1s infinite; }
@@ -698,23 +1704,65 @@ input { font-family: var(--mono); }
 @keyframes fx-spray1 { 0% { opacity: 0.95; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-11px, 105px); } }
 @keyframes fx-spray2 { 0% { opacity: 0.95; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(12px, 105px); } }
 @keyframes fx-spray3 { 0% { opacity: 0.95; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(35px, 95px); } }
+/* chamber the spray actually lands in, instead of fading into empty space */
+.fx-chamber-outline { fill: none; stroke: var(--amber-dim); stroke-width: 2; }
+.fx-chamber-fill {
+  fill: rgba(127, 212, 255, 0.12);
+  opacity: 0;
+  animation: fx-fade-in 1.8s 0.6s ease-out forwards;
+}
+/* carries the reading from the chamber over to the gauge, tying the two
+   halves of the scene together instead of leaving the gauge floating */
+.fx-pressure-line-base { stroke: #3a3f37; stroke-width: 6; fill: none; stroke-linejoin: round; }
+.fx-pressure-line {
+  stroke: var(--green);
+  stroke-width: 3;
+  fill: none;
+  stroke-linejoin: round;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: fx-flow 0.5s 0.5s ease-out forwards;
+  filter: drop-shadow(0 0 5px rgba(70, 255, 157, 0.8));
+}
 .fx-gauge-arc { fill: none; stroke: var(--amber-dim); stroke-width: 7; stroke-linecap: round; }
+.fx-gauge-green {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 7;
+  stroke-linecap: round;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(70, 255, 157, 0.8));
+  animation: fx-fade-in 0.4s 2.6s ease-out forwards;
+}
+@keyframes fx-fade-in { to { opacity: 1; } }
+.fx-gauge-burst {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fx-ping-ring 0.7s 2.6s forwards;
+}
 .fx-gauge-hub { fill: var(--amber); }
 .fx-needle {
   stroke: var(--green);
   stroke-width: 4;
   stroke-linecap: round;
-  transform: translate(80px, 168px) rotate(-75deg);
+  transform: translate(250px, 140px) rotate(-75deg);
   animation: fx-needle-sweep 1.8s 0.8s cubic-bezier(0.3, 1.4, 0.6, 1) forwards;
   filter: drop-shadow(0 0 4px rgba(70, 255, 157, 0.8));
 }
 @keyframes fx-needle-sweep {
-  from { transform: translate(80px, 168px) rotate(-75deg); }
-  to { transform: translate(80px, 168px) rotate(62deg); }
+  from { transform: translate(250px, 140px) rotate(-75deg); }
+  to { transform: translate(250px, 140px) rotate(62deg); }
 }
 
-/* diagnostics FX — terminal check scroll */
+/* diagnostics FX — terminal check scroll under a scanning sweep, glowing
+   green once every check is in */
 .fx-term {
+  position: relative;
+  overflow: hidden;
   width: min(80vw, 640px);
   border: 1px solid rgba(255, 201, 4, 0.4);
   background: #050a06;
@@ -723,10 +1771,55 @@ input { font-family: var(--mono); }
   letter-spacing: 0.08em;
   color: var(--text);
   box-shadow: 0 0 30px rgba(255, 201, 4, 0.15), inset 0 0 24px rgba(0, 0, 0, 0.6);
+  animation: fx-term-glow 0.6s 3.2s ease-out forwards;
+}
+@keyframes fx-term-glow {
+  to {
+    box-shadow: 0 0 42px rgba(70, 255, 157, 0.35), inset 0 0 24px rgba(0, 0, 0, 0.6);
+    border-color: rgba(70, 255, 157, 0.6);
+  }
+}
+.fx-term-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(70, 255, 157, 0.9), transparent);
+  opacity: 0;
+  animation: fx-term-scan-move 3.4s ease-in-out forwards;
+}
+@keyframes fx-term-scan-move {
+  0% { top: 0; opacity: 0; }
+  4% { opacity: 1; }
+  92% { opacity: 1; top: 100%; }
+  100% { opacity: 0; top: 100%; }
 }
 .fx-term-line { opacity: 0; animation: fx-term-line 0.25s steps(2) forwards; padding: 3px 0; }
 @keyframes fx-term-line { to { opacity: 1; } }
 .fx-term-final { color: var(--green); text-shadow: 0 0 10px rgba(70, 255, 157, 0.7); }
+.fx-term-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px -10px 14px;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 201, 4, 0.25);
+}
+.fx-term-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); opacity: 0.6; }
+.fx-term-dot.d1 { background: var(--red); }
+.fx-term-dot.d2 { background: var(--amber); }
+.fx-term-dot.d3 { background: var(--green); }
+.fx-term-titletext { color: var(--text-dim); font-size: 0.65em; letter-spacing: 0.1em; margin-left: 6px; }
+.fx-term-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--green);
+  margin-left: 6px;
+  vertical-align: text-bottom;
+  animation: blink 0.8s step-end infinite;
+}
 
 /* success screen extras */
 .success-mascot { margin: 1vh 0; }

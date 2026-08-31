@@ -5,16 +5,27 @@
 import { useSyncExternalStore } from 'react';
 import { CONFIG } from './config.js';
 
-const STORAGE_KEY = 'citronauts-escape-state-v1';
-const CHANNEL_NAME = 'citronauts-escape-sync-v1';
+// Bumped to v2 with the idle-screen phase: any state saved by an older
+// build (which defaulted to phase 'intro') is discarded on load so every
+// fresh page load lands on the calm idle screen, not a stale mid-mission
+// or MAYDAY-phase save from before this schema existed.
+const STORAGE_KEY = 'citronauts-escape-state-v2';
+const CHANNEL_NAME = 'citronauts-escape-sync-v2';
+
+// Leaderboard is a SEPARATE store from game state on purpose: it must
+// survive "Reset for Next Group" (which wipes game state back to
+// initialState()), and it accumulates across the whole event.
+const LB_STORAGE_KEY = 'citronauts-escape-leaderboard-v1';
+const LB_CHANNEL_NAME = 'citronauts-escape-leaderboard-sync-v1';
 
 export function initialState() {
   const tasks = {};
-  for (const t of CONFIG.tasks) tasks[t.id] = { status: 'pending', value: null };
+  for (const t of CONFIG.tasks) tasks[t.id] = { status: 'pending', value: null, attempts: 0, lastAttemptAt: null };
   return {
     rev: 0,
-    // intro -> active -> final (all systems online) -> launch (password accepted)
-    phase: 'intro',
+    // idle (calm surface cam) -> intro (distress call) -> active ->
+    // final (all systems online) -> launch (password accepted)
+    phase: 'idle',
     tasks, // { [taskId]: { status: 'pending'|'correct'|'incorrect', value } }
     timer: {
       running: false,
@@ -25,6 +36,8 @@ export function initialState() {
     deniedAt: null, // timestamp of last failed password attempt
     launchAt: null, // timestamp the launch sequence started
     timeUsedMs: null, // clock time consumed, captured at launch
+    groupName: '', // this run's group name, editable until launch
+    leaderboardEntryId: null, // set at launch — lets the display highlight "this is us"
   };
 }
 
@@ -88,6 +101,101 @@ export function useGameState() {
 }
 
 // ---------------------------------------------------------------------------
+// Leaderboard — persists across "Reset for Next Group", synced the same way
+// as game state (BroadcastChannel + localStorage fallback) so entries added
+// from the Control Panel show up on the Mission Display's success screen.
+// ---------------------------------------------------------------------------
+function loadLeaderboard() {
+  try {
+    const raw = localStorage.getItem(LB_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch {
+    /* corrupted — start fresh */
+  }
+  return [];
+}
+
+let leaderboard = loadLeaderboard();
+const lbListeners = new Set();
+
+let lbChannel = null;
+try {
+  lbChannel = new BroadcastChannel(LB_CHANNEL_NAME);
+  lbChannel.onmessage = (e) => acceptRemoteLeaderboard(e.data);
+} catch {
+  /* BroadcastChannel unavailable — the storage event below still syncs */
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key !== LB_STORAGE_KEY || !e.newValue) return;
+  try {
+    acceptRemoteLeaderboard(JSON.parse(e.newValue));
+  } catch {
+    /* ignore malformed payloads */
+  }
+});
+
+function acceptRemoteLeaderboard(next) {
+  if (!Array.isArray(next)) return;
+  leaderboard = next;
+  lbListeners.forEach((l) => l());
+}
+
+function commitLeaderboard(next) {
+  leaderboard = next;
+  try {
+    localStorage.setItem(LB_STORAGE_KEY, JSON.stringify(leaderboard));
+  } catch {
+    /* storage full/blocked — BroadcastChannel still syncs live windows */
+  }
+  if (lbChannel) lbChannel.postMessage(leaderboard);
+  lbListeners.forEach((l) => l());
+}
+
+function lbSubscribe(l) {
+  lbListeners.add(l);
+  return () => lbListeners.delete(l);
+}
+
+export function useLeaderboard() {
+  return useSyncExternalStore(lbSubscribe, () => leaderboard);
+}
+
+// Fastest time first.
+export function sortedLeaderboard(lb) {
+  return [...lb].sort((a, b) => a.timeUsedMs - b.timeUsedMs);
+}
+
+export const leaderboardActions = {
+  addEntry(name, timeUsedMs) {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: String(name ?? '').trim() || 'UNNAMED CREW',
+      timeUsedMs,
+      completedAt: Date.now(),
+    };
+    commitLeaderboard([...leaderboard, entry]);
+    return entry.id;
+  },
+  renameEntry(id, name) {
+    const trimmed = String(name ?? '').trim();
+    if (!trimmed) return;
+    commitLeaderboard(leaderboard.map((e) => (e.id === id ? { ...e, name: trimmed } : e)));
+  },
+  // Facilitator cleanup — remove a single run (e.g. a test run).
+  deleteEntry(id) {
+    commitLeaderboard(leaderboard.filter((e) => e.id !== id));
+  },
+  // Full wipe — used sparingly, e.g. clearing test data before doors open.
+  clearAll() {
+    commitLeaderboard([]);
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Derived helpers
 // ---------------------------------------------------------------------------
 export function remainingMs(timer, now = Date.now()) {
@@ -109,19 +217,67 @@ export function onlineCount(s) {
 }
 
 // Letter pair for each task, in order; null where not yet solved correctly.
+// Each task always contributes the same fixed letterPair once solved — it's
+// no longer looked up by the submitted value (see config.js).
 export function collectedSegments(s) {
-  return CONFIG.tasks.map((t) => {
-    const st = s.tasks[t.id];
-    return st.status === 'correct' ? (t.decode[st.value] ?? '??') : null;
-  });
+  return CONFIG.tasks.map((t) => (s.tasks[t.id].status === 'correct' ? t.letterPair : null));
 }
 
 const normalize = (str) => String(str ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 // ---------------------------------------------------------------------------
+// Persistent Citronaut hints — most-recently-failed, still-unsolved task
+// wins. Hint text escalates from gentle (1st wrong try) to obvious (3rd+).
+// ---------------------------------------------------------------------------
+export function currentHint(s) {
+  const candidates = CONFIG.tasks
+    .filter((t) => s.tasks[t.id].status === 'incorrect' && s.tasks[t.id].attempts > 0 && t.hints?.length)
+    .sort((a, b) => (s.tasks[b.id].lastAttemptAt ?? 0) - (s.tasks[a.id].lastAttemptAt ?? 0));
+  const task = candidates[0];
+  if (!task) return null;
+  const attempts = s.tasks[task.id].attempts;
+  const level = Math.min(attempts, task.hints.length);
+  return { task, text: task.hints[level - 1], level };
+}
+
+// ---------------------------------------------------------------------------
+// Final cipher — the Mission Display never shows the password directly.
+// Instead it shows each task's fixed cipherDigit (in task order) as a
+// repeating Caesar shift key, and finalPassword run through that shift.
+// The team decodes it by hand by shifting each letter back. cipherDigit is
+// deliberately independent of correctAnswer — the real measured value
+// (2000Ω, 27.933g, ...) is often too large or non-integer to use as a
+// hand-computable shift, so each task carries its own small 1-9 digit for
+// this purpose instead.
+// ---------------------------------------------------------------------------
+const A_CODE = 'A'.charCodeAt(0);
+
+function shiftLetter(ch, shift) {
+  if (ch < 'A' || ch > 'Z') return ch;
+  return String.fromCharCode(((ch.charCodeAt(0) - A_CODE + shift) % 26 + 26) % 26 + A_CODE);
+}
+
+export function cipherKey() {
+  return CONFIG.tasks.map((t) => t.cipherDigit);
+}
+
+export function finalCipherLetters() {
+  const key = cipherKey();
+  const letters = CONFIG.finalPassword.toUpperCase().replace(/[^A-Z]/g, '').split('');
+  return letters.map((ch, i) => shiftLetter(ch, key[i % key.length]));
+}
+
+// ---------------------------------------------------------------------------
 // Actions — invoked from the Control Panel only
 // ---------------------------------------------------------------------------
 export const actions = {
+  // Wake the idle surface-cam screen into Citronaut's distress call.
+  startTransmission() {
+    const s = state;
+    if (s.phase !== 'idle') return;
+    commit({ ...s, phase: 'intro', lastEvent: { type: 'transmission-start', at: Date.now() } });
+  },
+
   beginMission() {
     const s = state;
     if (s.phase !== 'intro') return;
@@ -137,8 +293,21 @@ export const actions = {
     if (!cfg || s.phase === 'launch') return;
     const num = Number(value);
     if (!Number.isFinite(num)) return;
-    const correct = num === cfg.correctAnswer;
-    const tasks = { ...s.tasks, [id]: { status: correct ? 'correct' : 'incorrect', value: num } };
+    // correctAnswer can be null while a task's real value is still TBD
+    // (see config.js) — treat every submission as wrong rather than
+    // comparing against a coerced 0.
+    const correct = cfg.correctAnswer != null && Math.abs(num - cfg.correctAnswer) <= (cfg.tolerance ?? 0);
+    const prev = s.tasks[id];
+    const prevAttempts = prev.attempts ?? 0;
+    const tasks = {
+      ...s.tasks,
+      [id]: {
+        status: correct ? 'correct' : 'incorrect',
+        value: num,
+        attempts: correct ? prevAttempts : prevAttempts + 1,
+        lastAttemptAt: correct ? (prev.lastAttemptAt ?? null) : Date.now(),
+      },
+    };
     const next = {
       ...s,
       tasks,
@@ -151,11 +320,12 @@ export const actions = {
     commit(next);
   },
 
-  // Facilitator undo (typo recovery): put a task back to pending.
+  // Facilitator undo (typo recovery): put a task back to pending. Attempt
+  // history is preserved so hint escalation doesn't reset on an undo.
   clearTask(id) {
     const s = state;
     if (!s.tasks[id] || s.phase === 'launch') return;
-    const tasks = { ...s.tasks, [id]: { status: 'pending', value: null } };
+    const tasks = { ...s.tasks, [id]: { ...s.tasks[id], status: 'pending', value: null } };
     const phase = s.phase === 'final' ? 'active' : s.phase;
     commit({ ...s, tasks, phase });
   },
@@ -182,17 +352,28 @@ export const actions = {
     if (s.phase !== 'final') return;
     if (normalize(text) === normalize(CONFIG.finalPassword)) {
       const left = remainingMs(s.timer);
+      const timeUsedMs = CONFIG.timerMinutes * 60 * 1000 - left;
+      const entryId = leaderboardActions.addEntry(s.groupName, timeUsedMs);
       commit({
         ...s,
         phase: 'launch',
         launchAt: Date.now(),
-        timeUsedMs: CONFIG.timerMinutes * 60 * 1000 - left,
+        timeUsedMs,
         timer: { running: false, endsAt: null, remainingMs: left }, // freeze the clock
         deniedAt: null,
+        leaderboardEntryId: entryId,
       });
     } else {
       commit({ ...s, deniedAt: Date.now(), lastEvent: { type: 'denied', at: Date.now() } });
     }
+  },
+
+  // Group name is editable any time before launch; recorded onto the
+  // leaderboard entry created at launch.
+  setGroupName(name) {
+    const s = state;
+    if (s.phase === 'launch') return;
+    commit({ ...s, groupName: name });
   },
 
   // Full wipe between groups.
